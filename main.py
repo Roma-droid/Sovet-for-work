@@ -274,11 +274,11 @@ def send_ai_reply(chat_id: int, telegram_id: int, user_text: str, system_overrid
         answer = call_ai(telegram_id, user_text, system_override)
         # Try Markdown first; fall back to plain text if parsing fails
         try:
-            bot.send_message(chat_id, answer, parse_mode='Markdown')
+            bot.send_message(chat_id, answer, parse_mode='Markdown', reply_markup=main_menu_kb())
         except Exception:
-            bot.send_message(chat_id, answer)
+            bot.send_message(chat_id, answer, reply_markup=main_menu_kb())
     except Exception as e:
-        bot.send_message(chat_id, '❌ Ошибка при обращении к AI. Попробуйте позже.')
+        bot.send_message(chat_id, '❌ Ошибка при обращении к AI. Попробуйте позже.', reply_markup=main_menu_kb())
         print(f'AI error: {e}')
 
 
@@ -321,7 +321,7 @@ def _safe(value: str | None) -> str:
 def show_profile(chat_id: int, telegram_id: int):
     user = get_user(telegram_id)
     if not user:
-        bot.send_message(chat_id, '❌ Профиль не найден. Введи /start чтобы начать.')
+        bot.send_message(chat_id, '❌ Профиль не найден. Введи /start чтобы начать.', reply_markup=main_menu_kb())
         return
     text = (
         '👤 *Твой профиль*\n\n'
@@ -330,7 +330,7 @@ def show_profile(chat_id: int, telegram_id: int):
         f'🧠 Навыки: {_safe(user["skills"])}\n'
         f'🎯 Цель: {_safe(user["goals"])}'
     )
-    bot.send_message(chat_id, text, parse_mode='Markdown')
+    bot.send_message(chat_id, text, parse_mode='Markdown', reply_markup=main_menu_kb())
 
 
 # ---------- Command handlers ----------
@@ -359,6 +359,7 @@ def handle_help(message):
         '/profile — посмотреть профиль\n'
         '/reset — очистить историю чата',
         parse_mode='Markdown',
+        reply_markup=main_menu_kb(),
     )
 
 
@@ -370,7 +371,7 @@ def handle_profile(message):
 @bot.message_handler(commands=['reset'])
 def handle_reset(message):
     clear_history(message.from_user.id)
-    bot.reply_to(message, '🔄 История чата очищена.')
+    bot.reply_to(message, '🔄 История чата очищена.', reply_markup=main_menu_kb())
 
 
 # ---------- Main message handler ----------
@@ -448,15 +449,16 @@ def handle_message(message):
             message.chat.id,
             '💼 *Карьерный совет*\n\nНапиши свой вопрос или опиши ситуацию — дам персональную рекомендацию.',
             parse_mode='Markdown',
+            reply_markup=main_menu_kb(),
         )
         return
 
     if text == '📊 Анализ навыков':
         user = get_user(uid)
         if not user or not user.get('skills'):
-            bot.send_message(message.chat.id, '⚠️ Сначала заполни профиль — нажми «✏️ Изменить профиль».')
+            bot.send_message(message.chat.id, '⚠️ Сначала заполни профиль — нажми «✏️ Изменить профиль».', reply_markup=main_menu_kb())
             return
-        bot.send_message(message.chat.id, '⏳ Анализирую навыки...')
+        bot.send_message(message.chat.id, '⏳ Анализирую навыки...', reply_markup=main_menu_kb())
         query = f'Мои навыки: {user["skills"]}. Цель: {user.get("goals", "не указана")}.'
         instruction = (
             'Проведи анализ навыков пользователя. Структурируй ответ строго по разделам:\n'
@@ -475,6 +477,7 @@ def handle_message(message):
                 message.chat.id,
                 '📭 База карьерных путей пока пуста.\n\n'
                 'Просто напиши, какое направление тебя интересует — подскажу что изучить!',
+                reply_markup=main_menu_kb(),
             )
         else:
             bot.send_message(
@@ -544,7 +547,7 @@ def handle_callback(call):
         label = RESOURCE_LABELS.get(category, category)
         items = get_resources(category)
         if not items:
-            bot.send_message(call.message.chat.id, f'📭 В разделе «{label}» пока ничего нет.')
+            bot.send_message(call.message.chat.id, f'📭 В разделе «{label}» пока ничего нет.', reply_markup=main_menu_kb())
             return
         lines = [f'*{label}*\n']
         for r in items:
@@ -555,16 +558,16 @@ def handle_callback(call):
                 lines.append(f'  🔗 {r["url"]}')
             lines.append('')
         try:
-            bot.send_message(call.message.chat.id, '\n'.join(lines), parse_mode='Markdown')
+            bot.send_message(call.message.chat.id, '\n'.join(lines), parse_mode='Markdown', reply_markup=main_menu_kb())
         except Exception:
-            bot.send_message(call.message.chat.id, '\n'.join(lines))
+            bot.send_message(call.message.chat.id, '\n'.join(lines), reply_markup=main_menu_kb())
         return
 
     if data.startswith('path_'):
         path_id = int(data[5:])
         path = get_career_path(path_id)
         if not path:
-            bot.send_message(call.message.chat.id, '❌ Не найдено.')
+            bot.send_message(call.message.chat.id, '❌ Не найдено.', reply_markup=main_menu_kb())
             return
         lines = [f'🗺 *{path["title"]}*\n']
         if path.get('description'):
@@ -576,9 +579,9 @@ def handle_callback(call):
         if path.get('growth_potential'):
             lines.append(f'📈 *Перспективы:*\n{path["growth_potential"]}')
         try:
-            bot.send_message(call.message.chat.id, '\n'.join(lines), parse_mode='Markdown')
+            bot.send_message(call.message.chat.id, '\n'.join(lines), parse_mode='Markdown', reply_markup=main_menu_kb())
         except Exception:
-            bot.send_message(call.message.chat.id, '\n'.join(lines))
+            bot.send_message(call.message.chat.id, '\n'.join(lines), reply_markup=main_menu_kb())
         return
 
 
